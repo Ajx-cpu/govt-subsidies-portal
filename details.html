@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheme Details</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo">JanSeva Subsidies</div>
+        <a href="index.html" class="back-link">← Back to All Subsidies</a>
+    </header>
+
+    <main class="container details-page">
+        <div class="details-header">
+            <span class="badge green" id="schemeStatus">Loading...</span>
+            <h1 id="schemeTitle">Loading...</h1>
+            <p class="dept" id="schemeDept">Please wait...</p>
+        </div>
+
+        <div class="details-layout">
+            <div class="main-info">
+                <section class="info-block">
+                    <h2>Overview & Benefits</h2>
+                    <p id="schemeDesc"></p>
+                    <p><strong>Benefit Value:</strong> <span id="schemeBenefit" class="benefit"></span></p>
+                </section>
+
+                <section class="info-block">
+                    <h2>Eligibility Criteria</h2>
+                    <ul id="eligibilityList" class="check-list"></ul>
+                </section>
+
+                <section class="info-block">
+                    <h2>Required Documents</h2>
+                    <div class="doc-tags" id="documentsList"></div>
+                </section>
+            </div>
+
+            <div class="sidebar-form">
+                <h3>Apply for this Subsidy</h3>
+                <div id="responseMessage" class="alert-box" style="display:none;"></div>
+                <form id="applicationForm">
+                    <label>Full Name</label>
+                    <input type="text" id="full_name" placeholder="Enter full name" required>
+
+                    <label>Mobile Number</label>
+                    <input type="tel" id="mobile" placeholder="10-digit phone number" required>
+
+                    <label>State</label>
+                    <select id="state" required>
+                        <option value="">Select State</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    </select>
+
+                    <label>Consumer Electricity / Land ID</label>
+                    <input type="text" id="consumer_no" placeholder="Account or Identification No." required>
+
+                    <button type="submit" class="btn-submit">Submit Application</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const schemeSlug = urlParams.get('scheme') || 'solar';
+
+        async function loadSchemeDetails() {
+            try {
+                const res = await fetch(`/api/schemes/${schemeSlug}`);
+                if (!res.ok) throw new Error("Scheme not found");
+                const data = await res.json();
+
+                document.title = `${data.title} - Details`;
+                document.getElementById('schemeTitle').innerText = data.title;
+                document.getElementById('schemeStatus').innerText = data.status;
+                document.getElementById('schemeDept').innerText = data.department;
+                document.getElementById('schemeDesc').innerText = data.description;
+                document.getElementById('schemeBenefit').innerText = data.benefit;
+
+                // Eligibility
+                const eligList = document.getElementById('eligibilityList');
+                eligList.innerHTML = data.eligibility.split('|').map(item => `<li>${item}</li>`).join('');
+
+                // Documents
+                const docContainer = document.getElementById('documentsList');
+                docContainer.innerHTML = data.documents.split(',').map(doc => `<span>${doc.trim()}</span>`).join('');
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('schemeTitle').innerText = "Scheme Not Found";
+            }
+        }
+
+        // Form Submission to Backend API
+        document.getElementById('applicationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payload = {
+                scheme_slug: schemeSlug,
+                full_name: document.getElementById('full_name').value,
+                mobile: document.getElementById('mobile').value,
+                state: document.getElementById('state').value,
+                consumer_no: document.getElementById('consumer_no').value
+            };
+
+            try {
+                const response = await fetch('/api/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const msgBox = document.getElementById('responseMessage');
+                msgBox.style.display = 'block';
+
+                if (result.success) {
+                    msgBox.className = 'alert-box success';
+                    msgBox.innerText = `${result.message} Your Application ID is #${result.applicationId}.`;
+                    document.getElementById('applicationForm').reset();
+                } else {
+                    msgBox.className = 'alert-box error';
+                    msgBox.innerText = result.message;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        loadSchemeDetails();
+    </script>
+</body>
+</html>
