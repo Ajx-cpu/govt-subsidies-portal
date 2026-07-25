@@ -9,48 +9,80 @@
 <body>
 
     <header class="navbar">
-        <div class="logo">JanSeva Subsidies</div>
+        <div class="logo" id="navLogo">JanSeva Subsidies</div>
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search subsidies..." onkeyup="filterSchemes()">
+            <input type="text" id="searchInput" placeholder="Search..." onkeyup="filterSchemes()">
         </div>
-        <button class="btn-login">Login</button>
+        
+        <!-- Language Selector -->
+        <div class="lang-picker">
+            <select id="langSelect" onchange="changeLanguage()">
+                <option value="en">English</option>
+                <option value="hi">हिंदी</option>
+                <option value="mr">मराठी</option>
+            </select>
+        </div>
     </header>
 
     <section class="hero">
-        <h1>Find Government Subsidies & Schemes</h1>
-        <p>Explore financial assistance provided by central & state governments.</p>
+        <h1 id="heroTitle">Find Government Subsidies & Schemes</h1>
+        <p id="heroSub">Explore financial assistance provided by central & state governments.</p>
     </section>
 
     <main class="container">
-        <h2>Available Schemes</h2>
-        <div class="grid" id="schemesGrid">
-            <!-- Cards populated dynamically via API -->
-        </div>
+        <h2 id="sectionTitle">Available Schemes</h2>
+        <div class="grid" id="schemesGrid"></div>
     </main>
 
     <script>
         let allSchemes = [];
+        let currentLang = localStorage.getItem('portal_lang') || 'en';
+
+        const translations = {
+            en: { search: "Search subsidies...", heroTitle: "Find Government Subsidies & Schemes", heroSub: "Explore financial assistance provided by central & state governments.", sectionTitle: "Available Schemes", btnView: "View Details" },
+            hi: { search: "सब्सिडी खोजें...", heroTitle: "सरकारी सब्सिडी और योजनाएं खोजें", heroSub: "केंद्र और राज्य सरकारों द्वारा प्रदान की जाने वाली वित्तीय सहायता देखें।", sectionTitle: "उपलब्ध योजनाएं", btnView: "विवरण देखें" },
+            mr: { search: "सब्सिडी शोधा...", heroTitle: "शासकीय सबसिडी आणि योजना शोधा", heroSub: "केंद्र आणि राज्य सरकारकडून मिळणारी आर्थिक मदत पहा.", sectionTitle: "उपलब्ध योजना", btnView: "तपशील पहा" }
+        };
 
         async function fetchSchemes() {
+            document.getElementById('langSelect').value = currentLang;
+            updateStaticText();
             try {
                 const response = await fetch('/api/schemes');
                 allSchemes = await response.json();
                 renderSchemes(allSchemes);
             } catch (err) {
-                console.error("Error loading schemes:", err);
+                console.error(err);
             }
+        }
+
+        function updateStaticText() {
+            const t = translations[currentLang];
+            document.getElementById('searchInput').placeholder = t.search;
+            document.getElementById('heroTitle').innerText = t.heroTitle;
+            document.getElementById('heroSub').innerText = t.heroSub;
+            document.getElementById('sectionTitle').innerText = t.sectionTitle;
+        }
+
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            localStorage.setItem('portal_lang', currentLang);
+            updateStaticText();
+            renderSchemes(allSchemes);
         }
 
         function renderSchemes(schemes) {
             const grid = document.getElementById('schemesGrid');
-            grid.innerHTML = schemes.map(scheme => `
+            const t = translations[currentLang];
+
+            grid.innerHTML = schemes.map(s => `
                 <div class="card">
-                    <span class="badge green">${scheme.status}</span>
-                    <h3>${scheme.title}</h3>
-                    <p>${scheme.description}</p>
+                    <span class="badge green">${s.status}</span>
+                    <h3>${s['title_' + currentLang]}</h3>
+                    <p>${s['desc_' + currentLang]}</p>
                     <div class="card-footer">
-                        <span class="benefit">${scheme.benefit}</span>
-                        <a href="details.html?scheme=${scheme.slug}" class="btn-primary">View Details</a>
+                        <span class="benefit">${s['benefit_' + currentLang]}</span>
+                        <a href="details.html?scheme=${s.slug}" class="btn-primary">${t.btnView}</a>
                     </div>
                 </div>
             `).join('');
@@ -59,8 +91,8 @@
         function filterSchemes() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allSchemes.filter(s => 
-                s.title.toLowerCase().includes(query) || 
-                s.category.toLowerCase().includes(query)
+                s['title_' + currentLang].toLowerCase().includes(query) ||
+                s['desc_' + currentLang].toLowerCase().includes(query)
             );
             renderSchemes(filtered);
         }
