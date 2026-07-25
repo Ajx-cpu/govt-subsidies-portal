@@ -10,58 +10,56 @@
 
     <header class="navbar">
         <div class="logo">JanSeva Subsidies</div>
-        <a href="index.html" class="back-link">← Back to All Subsidies</a>
+        <a href="index.html" class="back-link" id="backBtn">← Back to All Subsidies</a>
     </header>
 
     <main class="container details-page">
         <div class="details-header">
-            <span class="badge green" id="schemeStatus">Loading...</span>
+            <span class="badge green" id="schemeStatus">Active</span>
             <h1 id="schemeTitle">Loading...</h1>
-            <p class="dept" id="schemeDept">Please wait...</p>
+            <p class="dept" id="schemeDept"></p>
         </div>
 
         <div class="details-layout">
             <div class="main-info">
                 <section class="info-block">
-                    <h2>Overview & Benefits</h2>
+                    <h2 id="lblOverview">Overview & Benefits</h2>
                     <p id="schemeDesc"></p>
-                    <p><strong>Benefit Value:</strong> <span id="schemeBenefit" class="benefit"></span></p>
+                    <p><strong><span id="lblBenefit">Benefit</span>:</strong> <span id="schemeBenefit" class="benefit"></span></p>
                 </section>
 
                 <section class="info-block">
-                    <h2>Eligibility Criteria</h2>
+                    <h2 id="lblElig">Eligibility Criteria</h2>
                     <ul id="eligibilityList" class="check-list"></ul>
                 </section>
 
                 <section class="info-block">
-                    <h2>Required Documents</h2>
+                    <h2 id="lblDocs">Required Documents</h2>
                     <div class="doc-tags" id="documentsList"></div>
                 </section>
             </div>
 
             <div class="sidebar-form">
-                <h3>Apply for this Subsidy</h3>
+                <h3 id="lblApplyTitle">Apply for this Subsidy</h3>
                 <div id="responseMessage" class="alert-box" style="display:none;"></div>
                 <form id="applicationForm">
-                    <label>Full Name</label>
-                    <input type="text" id="full_name" placeholder="Enter full name" required>
+                    <label id="lblFullName">Full Name</label>
+                    <input type="text" id="full_name" required>
 
-                    <label>Mobile Number</label>
-                    <input type="tel" id="mobile" placeholder="10-digit phone number" required>
+                    <label id="lblMobile">Mobile Number</label>
+                    <input type="tel" id="mobile" required>
 
-                    <label>State</label>
+                    <label id="lblState">State</label>
                     <select id="state" required>
-                        <option value="">Select State</option>
                         <option value="Maharashtra">Maharashtra</option>
                         <option value="Delhi">Delhi</option>
                         <option value="Gujarat">Gujarat</option>
-                        <option value="Uttar Pradesh">Uttar Pradesh</option>
                     </select>
 
-                    <label>Consumer Electricity / Land ID</label>
-                    <input type="text" id="consumer_no" placeholder="Account or Identification No." required>
+                    <label id="lblConsumer">Consumer / Registration ID</label>
+                    <input type="text" id="consumer_no" required>
 
-                    <button type="submit" class="btn-submit">Submit Application</button>
+                    <button type="submit" class="btn-submit" id="btnSubmit">Submit Application</button>
                 </form>
             </div>
         </div>
@@ -70,38 +68,54 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const schemeSlug = urlParams.get('scheme') || 'solar';
+        const currentLang = localStorage.getItem('portal_lang') || 'en';
+
+        const labels = {
+            en: { back: "← Back", overview: "Overview & Benefits", benefit: "Benefit", elig: "Eligibility Criteria", docs: "Required Documents", applyTitle: "Apply for this Subsidy", name: "Full Name", mobile: "Mobile Number", state: "State", consumer: "Consumer / Registration ID", submit: "Submit Application" },
+            hi: { back: "← वापस जाएं", overview: "विवरण और लाभ", benefit: "लाभ", elig: "पात्रता मापदंड", docs: "आवश्यक दस्तावेज", applyTitle: "इस योजना के लिए आवेदन करें", name: "पूरा नाम", mobile: "मोबाइल नंबर", state: "राज्य", consumer: "उपभोक्ता / पंजीकरण आईडी", submit: "आवेदन जमा करें" },
+            mr: { back: "← मागे जा", overview: "माहिती आणि फायदे", benefit: "फायदा", elig: "पात्रता निकष", docs: "आवश्यक कागदपत्रे", applyTitle: "या योजनेसाठी अर्ज करा", name: "पूर्ण नाव", mobile: "मोबाईल नंबर", state: "राज्य", consumer: "ग्राहक / नोंदणी आयडी", submit: "अर्ज सादर करा" }
+        };
+
+        function setPageLabels() {
+            const l = labels[currentLang];
+            document.getElementById('backBtn').innerText = l.back;
+            document.getElementById('lblOverview').innerText = l.overview;
+            document.getElementById('lblBenefit').innerText = l.benefit;
+            document.getElementById('lblElig').innerText = l.elig;
+            document.getElementById('lblDocs').innerText = l.docs;
+            document.getElementById('lblApplyTitle').innerText = l.applyTitle;
+            document.getElementById('lblFullName').innerText = l.name;
+            document.getElementById('lblMobile').innerText = l.mobile;
+            document.getElementById('lblState').innerText = l.state;
+            document.getElementById('lblConsumer').innerText = l.consumer;
+            document.getElementById('btnSubmit').innerText = l.submit;
+        }
 
         async function loadSchemeDetails() {
+            setPageLabels();
             try {
                 const res = await fetch(`/api/schemes/${schemeSlug}`);
-                if (!res.ok) throw new Error("Scheme not found");
                 const data = await res.json();
 
-                document.title = `${data.title} - Details`;
-                document.getElementById('schemeTitle').innerText = data.title;
-                document.getElementById('schemeStatus').innerText = data.status;
-                document.getElementById('schemeDept').innerText = data.department;
-                document.getElementById('schemeDesc').innerText = data.description;
-                document.getElementById('schemeBenefit').innerText = data.benefit;
+                document.getElementById('schemeTitle').innerText = data['title_' + currentLang];
+                document.getElementById('schemeDept').innerText = data['dept_' + currentLang];
+                document.getElementById('schemeDesc').innerText = data['desc_' + currentLang];
+                document.getElementById('schemeBenefit').innerText = data['benefit_' + currentLang];
 
                 // Eligibility
                 const eligList = document.getElementById('eligibilityList');
-                eligList.innerHTML = data.eligibility.split('|').map(item => `<li>${item}</li>`).join('');
+                eligList.innerHTML = data['eligibility_' + currentLang].split('|').map(i => `<li>${i}</li>`).join('');
 
                 // Documents
                 const docContainer = document.getElementById('documentsList');
-                docContainer.innerHTML = data.documents.split(',').map(doc => `<span>${doc.trim()}</span>`).join('');
-
+                docContainer.innerHTML = data['documents_' + currentLang].split(',').map(d => `<span>${d.trim()}</span>`).join('');
             } catch (err) {
                 console.error(err);
-                document.getElementById('schemeTitle').innerText = "Scheme Not Found";
             }
         }
 
-        // Form Submission to Backend API
         document.getElementById('applicationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const payload = {
                 scheme_slug: schemeSlug,
                 full_name: document.getElementById('full_name').value,
@@ -110,28 +124,17 @@
                 consumer_no: document.getElementById('consumer_no').value
             };
 
-            try {
-                const response = await fetch('/api/apply', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                const msgBox = document.getElementById('responseMessage');
-                msgBox.style.display = 'block';
-
-                if (result.success) {
-                    msgBox.className = 'alert-box success';
-                    msgBox.innerText = `${result.message} Your Application ID is #${result.applicationId}.`;
-                    document.getElementById('applicationForm').reset();
-                } else {
-                    msgBox.className = 'alert-box error';
-                    msgBox.innerText = result.message;
-                }
-            } catch (err) {
-                console.error(err);
-            }
+            const response = await fetch('/api/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            const msgBox = document.getElementById('responseMessage');
+            msgBox.style.display = 'block';
+            msgBox.className = 'alert-box success';
+            msgBox.innerText = `Submitted Successfully! ID: #${result.applicationId}`;
+            document.getElementById('applicationForm').reset();
         });
 
         loadSchemeDetails();
